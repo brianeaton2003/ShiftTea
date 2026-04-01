@@ -1,0 +1,36 @@
+# Dependencies
+**/node_modules/
+.pnp
+.pnp.*
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+
+# Firebase
+firebase/functions/lib/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+
+# Environment / secrets
+**/.env*.local
+firebase/functions/.env
+
+# TypeScript
+*.tsbuildinfo
+web/next-env.d.ts
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vercel (if ever used)
+.vercel

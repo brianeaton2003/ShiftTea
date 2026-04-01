@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "shifttea-dev",
+    "prod": "shifttea-prod",
+    "dev": "shifttea-dev"
+  },
+  "targets": {},
+  "etags": {}
+}
