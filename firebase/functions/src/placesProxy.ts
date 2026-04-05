@@ -5,6 +5,7 @@
 
 import * as admin from 'firebase-admin';
 import { onRequest } from 'firebase-functions/v2/https';
+import { runWithMetrics } from './devMetrics/context.js';
 import { shouldVerifyAppCheck } from './appCheckUtil.js';
 
 if (!admin.apps.length) {
@@ -23,6 +24,7 @@ export const placesProxy = onRequest(
     cors: true,
   },
   async (req, res) => {
+    return runWithMetrics('placesProxy', async () => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, X-Firebase-AppCheck');
@@ -120,5 +122,6 @@ export const placesProxy = onRequest(
     }
 
     res.status(400).json({ status: 'INVALID_REQUEST', error: 'unknown-action' });
+    });
   },
 );

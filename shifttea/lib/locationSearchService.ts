@@ -1,6 +1,6 @@
 import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import { db } from './firebase';
-import { getSafeLocationSearchLimit, isSouthJerseyZip, normalizeSearchPrefix } from './locationSearchCost';
+import { getSafeLocationSearchLimit, isSouthJerseyZip, normalizeSearchPrefix } from './locationSearchHelpers';
 
 export interface LocalLocationHit {
   locationId: string;

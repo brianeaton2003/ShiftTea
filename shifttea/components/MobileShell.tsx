@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
@@ -13,18 +13,17 @@ const CTA_BOTTOM_PAD = 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]';
 export function MobileShell({ children }: { children: ReactNode }) {
   const [isDesktop, setIsDesktop] = useState(false);
   const pathname = usePathname() ?? '/';
+  const searchParams = useSearchParams();
   const showReviewCta = !pathname.startsWith('/review');
   const contentBottomPad = showReviewCta ? CTA_BOTTOM_PAD : 'pb-6';
-  const liveSearch = typeof window !== 'undefined' ? window.location.search : '';
-  const liveParams = new URLSearchParams(liveSearch);
 
   // With `trailingSlash: true`, location list/detail layouts use `/locations/`, not `/locations`.
   const pathnameNorm = (pathname ?? '/').replace(/\/+$/, '') || '/';
   const locationIdFromPath = /^\/locations\/(.+)$/.exec(pathnameNorm)?.[1];
   const locationIdFromQuery =
-    pathnameNorm === '/locations' ? liveParams.get('locationId')?.trim() ?? '' : '';
+    pathnameNorm === '/locations' ? searchParams.get('locationId')?.trim() ?? '' : '';
   const locationDetailId = locationIdFromPath ?? locationIdFromQuery ?? '';
-  const companyNameParam = liveParams.get('companyName')?.trim() ?? '';
+  const companyNameParam = searchParams.get('companyName')?.trim() ?? '';
   const reviewHref = locationDetailId
     ? `/review/?locationId=${encodeURIComponent(locationDetailId)}${
         companyNameParam ? `&companyName=${encodeURIComponent(companyNameParam)}` : ''

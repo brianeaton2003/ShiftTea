@@ -4,7 +4,7 @@ import {
   getSafeLocationSearchLimit,
   isSouthJerseyZip,
   normalizeSearchPrefix,
-} from './locationSearchCost';
+} from './locationSearchHelpers';
 
 describe('location search cost guards', () => {
   it('normalizes and trims the search prefix', () => {

@@ -1,13 +1,8 @@
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { runWithMetrics } from './devMetrics/context.js';
+import { db } from './firestoreDb.js';
 const GOOGLE_PLACES_BASE = 'https://maps.googleapis.com/maps/api/place';
 const CENTER = { lat: 39.79, lng: -74.82 };
 const MAX_KM = 40;
@@ -37,6 +32,7 @@ export const ensureLocationFromPlace = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+    return runWithMetrics('ensureLocationFromPlace', async () => {
     const data = (request.data ?? {}) as Payload;
     const placeId = String(data.place_id ?? '').trim();
     if (!placeId) throw new HttpsError('invalid-argument', 'missing-place_id');
@@ -120,6 +116,7 @@ export const ensureLocationFromPlace = onCall(
       company_name: companyName,
       created: true,
     };
+    });
   },
 );
 

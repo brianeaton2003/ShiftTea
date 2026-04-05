@@ -1,13 +1,8 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
+import { runWithMetrics } from './devMetrics/context.js';
 import { hashUid } from './utils/hash.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db } from './firestoreDb.js';
 
 type Payload = { location_id?: unknown };
 
@@ -20,6 +15,7 @@ export const getHelpfulVotesForLocation = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+  return runWithMetrics('getHelpfulVotesForLocation', async () => {
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
@@ -43,5 +39,7 @@ export const getHelpfulVotesForLocation = onCall(
   }
 
   return { review_ids };
-});
+  });
+  },
+);
 

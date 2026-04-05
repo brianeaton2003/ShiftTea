@@ -4,9 +4,9 @@
 .pnp.*
 
 # Next.js
-web/.next/
-web/out/
-web/build/
+shifttea/.next/
+shifttea/out/
+shifttea/build/
 
 # Firebase
 firebase/functions/lib/
@@ -22,7 +22,7 @@ firebase/functions/.env
 
 # TypeScript
 *.tsbuildinfo
-web/next-env.d.ts
+shifttea/next-env.d.ts
 
 # Misc
 .DS_Store
