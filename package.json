@@ -1,0 +1,15 @@
+{
+  "name": "shifttea",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names \"next,emulators,seed\" --prefix-colors \"cyan,yellow,green\" \"npm run dev --prefix web\" \"cd firebase && firebase emulators:start --project dev\" \"wait-on tcp:8080 tcp:9099 && npm run seed\"",
+    "build": "npm run build --prefix web",
+    "seed": "npm run seed --prefix firebase/functions",
+    "deploy:dev": "cd firebase && firebase deploy --project dev",
+    "deploy:prod": "cd firebase && firebase deploy --project prod"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "wait-on": "^8.0.3"
+  }
+}
