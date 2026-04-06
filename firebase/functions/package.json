@@ -9,6 +9,7 @@
     "deploy": "npm run build && firebase deploy --only functions",
     "logs": "firebase functions:log",
     "seed": "node seed.mjs",
+    "seed:heavy": "node seed.mjs --heavy",
     "metrics:summary": "node scripts/metrics-summary.mjs",
     "metrics:clear": "node -e \"require('fs').rmSync('dev-metrics.jsonl',{force:true}); console.log('cleared dev-metrics.jsonl')\"",
     "test": "vitest run",

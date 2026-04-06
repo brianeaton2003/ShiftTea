@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import {
   collection,
   doc,
@@ -15,6 +15,7 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { ReviewCard } from '@/components/ReviewCard';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { db } from '@/lib/firebase';
 import { avgLabel } from '@/lib/formatters';
 import type { LocationDoc, ReviewDoc } from '@/lib/types';
@@ -262,7 +263,9 @@ export function LocationDetailView({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="mb-3 flex items-center justify-between">
+      <AdPlaceholder slot="feed" />
+
+      <div className="mb-3 mt-4 flex items-center justify-between">
         <h2 className="font-bold text-gray-900">Reviews ({location.review_count})</h2>
         <select
           value={sort}
@@ -283,20 +286,24 @@ export function LocationDetailView({ id }: { id: string }) {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" aria-label="Loading reviews" />
           </div>
         ) : (
-          reviews.map((r) => (
-            <ReviewCard
-              key={r.review_id}
-              review={r}
-              initialHelpful={helpfulVotes.has(r.review_id)}
-              onHelpfulChange={(next) => {
-                setHelpfulVotes((prev) => {
-                  const n = new Set(prev);
-                  if (next) n.add(r.review_id);
-                  else n.delete(r.review_id);
-                  return n;
-                });
-              }}
-            />
+          reviews.map((r, i) => (
+            <Fragment key={r.review_id}>
+              <ReviewCard
+                review={r}
+                initialHelpful={helpfulVotes.has(r.review_id)}
+                onHelpfulChange={(next) => {
+                  setHelpfulVotes((prev) => {
+                    const n = new Set(prev);
+                    if (next) n.add(r.review_id);
+                    else n.delete(r.review_id);
+                    return n;
+                  });
+                }}
+              />
+              {(i + 1) % 3 === 0 && i < reviews.length - 1 && (
+                <AdPlaceholder slot="in-review" />
+              )}
+            </Fragment>
           ))
         )}
       </div>

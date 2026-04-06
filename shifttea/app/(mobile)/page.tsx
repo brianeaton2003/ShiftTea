@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import type { AppStatsDoc, ReviewDoc } from '@/lib/types';
 import Image from 'next/image';
 import { ReviewCard } from '@/components/ReviewCard';
+import { AdPlaceholder } from '@/components/AdPlaceholder';
 
 const HOME_CACHE_KEY = 'shifttea_home_v2';
 const HOME_CACHE_TTL_MS = 3 * 60 * 1000;
@@ -167,7 +168,9 @@ export default function HomePage() {
         <span className="text-sm">Search South Jersey employers…</span>
       </Link>
 
-      <div className="mb-3 flex items-center gap-2">
+      <AdPlaceholder slot="feed" />
+
+      <div className="mb-3 mt-6 flex items-center gap-2">
         <h2 className="font-bold text-gray-900">Recent Reviews</h2>
       </div>
 
