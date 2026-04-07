@@ -77,7 +77,7 @@ Connector configuration and SDK generation:
 connectorId: "default"
 generate:
   javascriptSdk:
-    outputDir: "../web/src/lib/dataconnect"
+    outputDir: "../shifttea/src/lib/dataconnect"
     package: "@myapp/dataconnect"
   kotlinSdk:
     outputDir: "../android/app/src/main/kotlin/com/myapp/dataconnect"

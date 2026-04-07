@@ -16,15 +16,10 @@
  */
 
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
+import { runWithMetrics } from './devMetrics/context.js';
 import { hashUid } from './utils/hash.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db } from './firestoreDb.js';
 
 /** Firestore batch-get limit per request (Node Admin SDK). */
 export const GET_ALL_CHUNK = 10;
@@ -148,6 +143,7 @@ export const getUserReviews = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+  return runWithMetrics('getUserReviews', async () => {
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
@@ -163,4 +159,6 @@ export const getUserReviews = onCall(
   reviews.sort(sortByCreatedDesc);
 
   return { reviews };
-});
+  });
+  },
+);

@@ -3,26 +3,28 @@
 .pnp
 .pnp.*
 
-# Next.js
-web/.next/
-web/out/
-web/build/
+# Next.js (any workspace package)
+**/.next/
+**/out/
+**/next-env.d.ts
 
 # Firebase
-firebase/functions/lib/
 .firebase/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
 database-debug.log
+firebase/functions/lib/
+firebase/functions/typings/
+firebase/functions/dev-metrics.jsonl
 
 # Environment / secrets
 **/.env*.local
 firebase/functions/.env
+firebase/functions/*.local
 
 # TypeScript
 *.tsbuildinfo
-web/next-env.d.ts
 
 # Misc
 .DS_Store

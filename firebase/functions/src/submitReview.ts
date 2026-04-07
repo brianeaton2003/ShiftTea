@@ -1,16 +1,11 @@
 import { FieldValue, GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
+import { runWithMetrics } from './devMetrics/context.js';
 import type { SubmitReviewPayload } from './types.js';
 import { hashUid } from './utils/hash.js';
 import { containsProfanity } from './profanity.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db } from './firestoreDb.js';
 
 export function assertRating(name: string, v: unknown): number {
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 5) {
@@ -40,6 +35,7 @@ export const submitReview = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+  return runWithMetrics('submitReview', async () => {
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
@@ -218,6 +214,7 @@ export const submitReview = onCall(
     );
 
     return { success: true, review_id: reviewId };
+  });
   });
   },
 );

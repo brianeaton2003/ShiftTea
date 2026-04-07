@@ -1,0 +1,21 @@
+{
+  "name": "shifttea",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm install --prefix shifttea && npm install --prefix firebase/functions && npm run build --prefix firebase/functions",
+    "dev": "concurrently --kill-others-on-fail --names \"next,emulators,seed\" --prefix-colors \"cyan,yellow,green\" \"npm run dev --prefix shifttea\" \"cd firebase && npx firebase emulators:start --project dev\" \"wait-on tcp:8080 tcp:9099 && npm run seed\"",
+    "dev:metrics": "SHIFTTEA_FIRESTORE_METRICS=1 concurrently --kill-others-on-fail --names \"next,emulators,seed\" --prefix-colors \"cyan,yellow,green\" \"npm run dev --prefix shifttea\" \"cd firebase && npx firebase emulators:start --project dev\" \"wait-on tcp:8080 tcp:9099 && npm run seed\"",
+    "build": "npm run build --prefix shifttea",
+    "seed": "npm run seed --prefix firebase/functions",
+    "deploy:dev": "cd firebase && npx firebase deploy --project dev",
+    "deploy:prod": "cd firebase && npx firebase deploy --project prod"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "firebase-tools": "^15.13.0",
+    "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0"
+  }
+}

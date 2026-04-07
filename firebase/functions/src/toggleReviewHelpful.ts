@@ -1,14 +1,9 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
+import { runWithMetrics } from './devMetrics/context.js';
 import { hashUid } from './utils/hash.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db } from './firestoreDb.js';
 
 type Payload = { location_id?: unknown; review_id?: unknown };
 
@@ -21,6 +16,7 @@ export const toggleReviewHelpful = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+  return runWithMetrics('toggleReviewHelpful', async () => {
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
@@ -68,5 +64,7 @@ export const toggleReviewHelpful = onCall(
     tx.update(reviewRef, { helpful_count: FieldValue.increment(1) });
     return { helpful: true, helpful_count: currentCount + 1 };
   });
-});
+  });
+  },
+);
 

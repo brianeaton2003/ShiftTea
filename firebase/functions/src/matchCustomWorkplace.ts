@@ -1,14 +1,9 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import { containsProfanity } from './profanity.js';
 import { addressFirstLine, parseDedupeParts, rowMatchesDedupe } from './workplaceNormalize.js';
 import { callableAppCheckEnforced } from './appCheckUtil.js';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { runWithMetrics } from './devMetrics/context.js';
+import { db } from './firestoreDb.js';
 const GOOGLE_PLACES_TEXT = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
 const GOOGLE_GEOCODE = 'https://maps.googleapis.com/maps/api/geocode/json';
 const CENTER = { lat: 39.79, lng: -74.82 };
@@ -184,6 +179,7 @@ export const matchCustomWorkplace = onCall(
     enforceAppCheck: callableAppCheckEnforced(),
   },
   async (request) => {
+    return runWithMetrics('matchCustomWorkplace', async () => {
     const data = (request.data ?? {}) as {
       company_name?: unknown;
       street?: unknown;
@@ -290,5 +286,6 @@ export const matchCustomWorkplace = onCall(
     }
 
     return { matches: googleMatches };
+    });
   },
 );
