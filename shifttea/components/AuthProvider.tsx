@@ -3,8 +3,8 @@
 import { getRedirectResult, onAuthStateChanged } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useEffect } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { useAuthStore } from '@/lib/authStore';
+import { auth, db } from '@/lib/firebase/firebase';
+import { useAuthStore } from '@/lib/firebase/authStore';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading } = useAuthStore();

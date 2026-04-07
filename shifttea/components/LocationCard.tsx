@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { LocationDoc } from '@/lib/types';
-import { avgLabel } from '@/lib/formatters';
-import { StarRating } from './StarRating';
+import type { LocationDoc } from '@/types';
+import { avgLabel } from '@/utils/formatters';
 import { buildLocationHref } from '@/lib/routes';
 
 interface Props {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
-import { useAuthStore } from '@/lib/authStore';
+import { useAuthStore } from '@/lib/firebase/authStore';
 import Image from 'next/image';
 
 function mapAuthError(code: string): string {
@@ -67,7 +67,7 @@ function AccountSignInForm() {
     }
   };
 
-  const signupHref = `/account/signup?redirectTo=${encodeURIComponent(redirectTo)}`;
+  const signupHref = `/auth/signup?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
     <div className="flex min-h-0 flex-col">

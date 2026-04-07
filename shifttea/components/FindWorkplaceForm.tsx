@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '@/lib/firebase';
+import { db, functions } from '@/lib/firebase/firebase';
 import { AddWorkplaceModal } from '@/components/AddWorkplaceModal';
-import { searchLocationsByPrefix, type LocalLocationHit } from '@/lib/locationSearchService';
-import { autocomplete, getPlaceDetails } from '@/lib/placesService';
-import { isWithinLaunchRegion } from '@/lib/launchRegion';
+import { searchLocationsByPrefix, type LocalLocationHit } from '@/lib/locations/locationSearchService';
+import { autocomplete, getPlaceDetails } from '@/lib/places/placesService';
+import { isWithinLaunchRegion } from '@/constants/launchRegion';
 import { buildLocationHref, buildReviewHref } from '@/lib/routes';
 
 type SearchRow =
@@ -115,7 +115,18 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
       if (variant === 'locations') {
         router.push(buildLocationHref(hit.locationId, hit.companyName));
       } else {
-        router.push(buildReviewQuery({ locationId: hit.locationId }));
+        router.push(
+          buildReviewQuery({
+            locationId: hit.locationId,
+            companyName: hit.companyName,
+            address: hit.address,
+            city: hit.city,
+            zip: hit.zip,
+            category: 'business',
+            lat: '39.79',
+            lng: '-74.97',
+          }),
+        );
       }
     },
     [variant, router, buildReviewQuery],

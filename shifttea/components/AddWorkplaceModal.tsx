@@ -4,12 +4,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { httpsCallable, type FunctionsError } from 'firebase/functions';
-import { db, functions } from '@/lib/firebase';
-import { LAUNCH_MAP_CENTER } from '@/lib/launchRegion';
-import { makeManualLocationId } from '@/lib/manualLocationId';
-import { containsProfanity } from '@/lib/profanity';
+import { db, functions } from '@/lib/firebase/firebase';
+import { LAUNCH_MAP_CENTER } from '@/constants/launchRegion';
+import { makeManualLocationId } from '@/lib/locations/manualLocationId';
+import { containsProfanity } from '@/utils/profanity';
 import { buildLocationHref, buildReviewHref } from '@/lib/routes';
-import { matchCustomWorkplace, type WorkplaceMatch } from '@/lib/workplaceMatchService';
+import { matchCustomWorkplace, type WorkplaceMatch } from '@/lib/locations/workplaceMatchService';
 
 const MAX_NAME_LEN = 120;
 const ZIP_RE = /^\d{5}$/;

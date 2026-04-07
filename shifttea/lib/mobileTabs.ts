@@ -1,5 +1,5 @@
 /** Main bottom-nav tabs: swipe left advances, swipe right goes back (stories order). */
-export const MOBILE_TAB_ROUTES = ['/', '/locations/', '/review/', '/account/'] as const;
+export const MOBILE_TAB_ROUTES = ['/', '/locations/', '/review/select-location/', '/account/'] as const;
 
 export type MobileTabRoute = (typeof MOBILE_TAB_ROUTES)[number];
 

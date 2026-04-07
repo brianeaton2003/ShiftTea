@@ -3,15 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode } from 'react';
 import { Navbar } from '@/components/Navbar';
-import { DesktopComingSoon } from '@/components/DesktopComingSoon';
 
 /** Extra bottom padding so content clears the fixed “Write a review” bar. */
-const CTA_BOTTOM_PAD = 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]';
+const CTA_BOTTOM_PAD = 'pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-8';
 
 export function MobileShell({ children }: { children: ReactNode }) {
-  const [isDesktop, setIsDesktop] = useState(false);
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
   const showReviewCta = !pathname.startsWith('/review');
@@ -25,26 +23,13 @@ export function MobileShell({ children }: { children: ReactNode }) {
   const locationDetailId = locationIdFromPath ?? locationIdFromQuery ?? '';
   const companyNameParam = searchParams.get('companyName')?.trim() ?? '';
   const reviewHref = locationDetailId
-    ? `/review/?locationId=${encodeURIComponent(locationDetailId)}${
+    ? `/review/new/?locationId=${encodeURIComponent(locationDetailId)}${
         companyNameParam ? `&companyName=${encodeURIComponent(companyNameParam)}` : ''
       }`
-    : '/review/';
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const media = window.matchMedia('(min-width: 1024px)');
-    const sync = () => setIsDesktop(media.matches);
-    sync();
-    media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
-  }, []);
-
-  if (isDesktop) {
-    return <DesktopComingSoon />;
-  }
+    : '/review/select-location/';
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden bg-[var(--background)]">
+    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col overflow-hidden bg-[var(--background)]">
       <Navbar />
 
       <motion.div
@@ -55,13 +40,13 @@ export function MobileShell({ children }: { children: ReactNode }) {
         className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
-          <div className={`px-4 pt-4 ${contentBottomPad}`}>{children}</div>
+          <div className={`px-4 pt-4 md:px-6 lg:px-8 ${contentBottomPad}`}>{children}</div>
         </div>
       </motion.div>
 
       {showReviewCta && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center">
-          <div className="pointer-events-auto w-full max-w-md border-t border-gray-100 bg-white/95 px-4 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-white/90 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center lg:hidden">
+          <div className="pointer-events-auto w-full max-w-5xl border-t border-gray-100 bg-white/95 px-4 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-white/90 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-6 lg:px-8">
             <Link
               prefetch={false}
               href={reviewHref}

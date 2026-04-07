@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { ReviewDoc } from '@/lib/types';
-import { formatRelativeTime } from '@/lib/formatters';
+import type { ReviewDoc } from '@/types';
+import { formatRelativeTime } from '@/utils/formatters';
 import { Timestamp } from 'firebase/firestore';
 import { useId, useMemo, useState } from 'react';
-import { useAuthStore } from '@/lib/authStore';
-import { toggleReviewHelpful } from '@/lib/reviewService';
+import { useAuthStore } from '@/lib/firebase/authStore';
+import { toggleReviewHelpful } from '@/lib/review/reviewService';
 import { buildLocationHref } from '@/lib/routes';
 
 interface Props {
@@ -150,7 +150,7 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange }: Props) {
           disabled={helpfulBusy}
           onClick={async () => {
             if (!user) {
-              router.push(`/account?redirectTo=${encodeURIComponent(redirectTo)}`);
+              router.push(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
               return;
             }
             const next = !helpful;

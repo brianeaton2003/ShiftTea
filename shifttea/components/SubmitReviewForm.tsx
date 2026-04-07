@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { StarRating } from '@/components/StarRating';
-import { isAlreadyReviewedError, submitReview } from '@/lib/reviewService';
-import type { SubmitReviewPayload } from '@/lib/types';
-import { PATH_REVIEW_INDEX, buildLocationHref } from '@/lib/routes';
+import { isAlreadyReviewedError, submitReview } from '@/lib/review/reviewService';
+import type { SubmitReviewPayload } from '@/types';
+import { PATH_REVIEW_SELECT_LOCATION } from '@/lib/routes';
 
 const RATINGS = [
   { key: 'overall', label: 'Overall *' },
@@ -103,7 +103,7 @@ export function SubmitReviewForm({
     setSubmitting(true);
     try {
       await submitReview(payload);
-      router.push(buildLocationHref(locationId, companyName));
+      router.push(`/review/thank-you/?locationId=${encodeURIComponent(locationId)}&companyName=${encodeURIComponent(companyName)}`);
     } catch (e) {
       if (isAlreadyReviewedError(e)) {
         setError('You already reviewed this location.');
@@ -119,7 +119,7 @@ export function SubmitReviewForm({
     <form onSubmit={onSubmit}>
       <button
         type="button"
-        onClick={() => router.push(PATH_REVIEW_INDEX)}
+        onClick={() => router.push(PATH_REVIEW_SELECT_LOCATION)}
         className="flex items-center gap-1 text-gray-400 text-sm mb-4 hover:text-gray-600 transition-colors"
       >
         <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor">

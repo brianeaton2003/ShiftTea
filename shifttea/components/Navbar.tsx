@@ -5,7 +5,7 @@ import Link from 'next/link';
 export function Navbar() {
   return (
     <nav className="relative z-[60] shrink-0 bg-white pt-[env(safe-area-inset-top,0px)] shadow-sm border-b border-gray-100">
-      <div className="mx-auto flex h-14 max-w-md items-center justify-between gap-3 px-4">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-1">
           <Link
             prefetch={false}

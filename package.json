@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "firebase-tools": "^14.0.0",
+    "firebase-tools": "^15.13.0",
     "wait-on": "^8.0.3"
   }
 }

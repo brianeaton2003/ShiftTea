@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="h-dvh overflow-hidden">
       <body
-        className="mx-auto flex h-full min-h-0 max-w-[428px] flex-col overflow-hidden antialiased"
+        className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden bg-white antialiased"
         suppressHydrationWarning
       >
         <AuthProvider>{children}</AuthProvider>

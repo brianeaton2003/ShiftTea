@@ -16,11 +16,11 @@ import {
 } from 'firebase/firestore';
 import { ReviewCard } from '@/components/ReviewCard';
 import { AdPlaceholder } from '@/components/AdPlaceholder';
-import { db } from '@/lib/firebase';
-import { avgLabel } from '@/lib/formatters';
-import type { LocationDoc, ReviewDoc } from '@/lib/types';
-import { useAuthStore } from '@/lib/authStore';
-import { getHelpfulVotesForLocation } from '@/lib/reviewService';
+import { db } from '@/lib/firebase/firebase';
+import { avgLabel } from '@/utils/formatters';
+import type { LocationDoc, ReviewDoc } from '@/types';
+import { useAuthStore } from '@/lib/firebase/authStore';
+import { getHelpfulVotesForLocation } from '@/lib/review/reviewService';
 
 const PAGE_SIZE = 5;
 
