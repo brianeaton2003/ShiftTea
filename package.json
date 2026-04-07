@@ -14,5 +14,8 @@
     "concurrently": "^9.1.2",
     "firebase-tools": "^15.13.0",
     "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0"
   }
 }
