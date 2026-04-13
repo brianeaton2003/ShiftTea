@@ -3,11 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '@/lib/firebase/firebase';
+import { db } from '@/lib/firebase/firebase';
 import { AddWorkplaceModal } from '@/components/AddWorkplaceModal';
 import { searchLocationsByPrefix, type LocalLocationHit } from '@/lib/locations/locationSearchService';
-import { autocomplete, getPlaceDetails } from '@/lib/places/placesService';
+import { getPlaceDetails, searchSouthJerseyGoogleEmployers } from '@/lib/places/placesService';
 import { isWithinLaunchRegion } from '@/constants/launchRegion';
 import { buildLocationHref, buildReviewHref } from '@/lib/routes';
 
@@ -67,34 +66,22 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
         }
 
         const remaining = BATCH - localRows.length;
-        const predictions = await autocomplete(query);
-        // Doc ids for Google-sourced locations are the same as `place_id`; skip Google rows we already have locally.
         const localPlaceIds = new Set(local.map((h) => h.locationId));
 
-        // Make the dropdown South-Jersey-exclusive by validating each Google suggestion.
-        // (Autocomplete can return "Philadelphia, PA" even when the establishment is in NJ.)
+        // Single placesProxy invocation (autocomplete + parallel details + server-side NJ / launch filter).
+        const googleHits = await searchSouthJerseyGoogleEmployers(query, remaining);
         const googleRows: SearchRow[] = [];
-        for (const p of predictions) {
+        for (const row of googleHits) {
           if (googleRows.length >= remaining) break;
-          if (localPlaceIds.has(p.placeId)) continue;
-          try {
-            const fromCache = detailsCache.current.get(p.placeId);
-            const details = fromCache ?? (await getPlaceDetails(p.placeId));
-            detailsCache.current.set(p.placeId, details);
-            if (!details) continue;
-            if (details.state !== 'NJ') continue;
-            if (!isWithinLaunchRegion(details.lat, details.lng)) continue;
-
-            googleRows.push({
-              kind: 'google',
-              key: `g-${p.placeId}`,
-              placeId: p.placeId,
-              title: p.mainText,
-              subtitle: p.secondaryText,
-            });
-          } catch {
-            // If Google details fails for one candidate, skip it and keep going.
-          }
+          if (localPlaceIds.has(row.placeId)) continue;
+          detailsCache.current.set(row.placeId, row.details);
+          googleRows.push({
+            kind: 'google',
+            key: `g-${row.placeId}`,
+            placeId: row.placeId,
+            title: row.mainText,
+            subtitle: row.secondaryText,
+          });
         }
 
         setRows([...localRows, ...googleRows]);
@@ -137,6 +124,7 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
       setSelecting(true);
       setSelectionError(null);
       try {
+        // Check Firestore cache first — avoids re-fetching details we already have
         const locSnap = await getDoc(doc(db, 'locations', placeId));
         if (locSnap.exists()) {
           const existing = locSnap.data();
@@ -144,7 +132,9 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
           router.push(buildLocationHref(placeId, companyName));
           return;
         }
-        const details = await getPlaceDetails(placeId);
+
+        // Fall back to details cached during the search
+        const details = detailsCache.current.get(placeId) ?? await getPlaceDetails(placeId);
         if (!details) return;
         if (details.state !== 'NJ') {
           setSelectionError('That workplace is outside South Jersey. Try another result.');
@@ -154,14 +144,14 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
           setSelectionError('That workplace is outside the South Jersey area we support right now.');
           return;
         }
+
+        // For both variants, navigate with the place details we already have.
+        // The location doc is created lazily when a review is submitted.
         if (variant === 'locations') {
-          const ensure = httpsCallable(functions, 'ensureLocationFromPlace');
-          const ensured = await ensure({ place_id: placeId });
-          const data = (ensured.data ?? {}) as { company_name?: string };
-          const companyName = data.company_name ?? details.name;
-          router.push(buildLocationHref(placeId, companyName));
+          router.push(buildLocationHref(placeId, details.name));
           return;
         }
+
         const params = {
           locationId: placeId,
           companyName: details.name,
@@ -183,17 +173,21 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
   return (
     <div>
       {variant === 'locations' ? (
-        <div className="flex items-start gap-3 mb-4">
-          {leading ? <div className="shrink-0 pt-1">{leading}</div> : null}
+        <div className="mb-4 flex items-start gap-3">
+          {leading ? <div className="shrink-0 pt-1 lg:hidden">{leading}</div> : null}
           <div className="flex-1 min-w-0">
-            {title && <h1 className="text-2xl font-bold text-gray-900 mb-1">{title}</h1>}
-            {description && <p className="text-sm text-gray-400 italic">{description}</p>}
+            {title && <h1 className="mb-1 text-2xl font-bold text-gray-900 lg:text-3xl">{title}</h1>}
+            {description && (
+              <p className="text-sm italic text-gray-500 lg:text-base">{description}</p>
+            )}
           </div>
         </div>
       ) : (
         <>
-          {title && <h1 className="text-2xl font-bold text-gray-900 mb-1">{title}</h1>}
-          {description && <p className="text-sm text-gray-400 mb-4 italic">{description}</p>}
+          {title && <h1 className="mb-1 text-2xl font-bold text-gray-900 lg:text-3xl">{title}</h1>}
+          {description && (
+            <p className="mb-4 text-sm italic text-gray-500 lg:text-base">{description}</p>
+          )}
         </>
       )}
 
@@ -206,8 +200,15 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
       )}
 
       <div className="relative mb-2">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <svg width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-gray-400">
+        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center lg:left-4">
+          <svg
+            width={18}
+            height={18}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="text-gray-500 lg:h-5 lg:w-5"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
@@ -217,7 +218,7 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search South Jersey employers…"
-          className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent shadow-sm"
+          className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400 lg:h-14 lg:rounded-2xl lg:border-2 lg:border-black/10 lg:py-4 lg:pl-12 lg:text-base lg:focus:border-orange-500"
           autoComplete="off"
           autoCorrect="off"
         />
@@ -229,7 +230,7 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
       </div>
 
       {rows.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm lg:rounded-2xl lg:border-black/10">
           {selectionError && (
             <p className="px-4 py-2 text-sm text-red-600 border-b border-gray-100 bg-white">
               {selectionError}

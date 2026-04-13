@@ -67,13 +67,13 @@ function SignUpForm() {
   const signinHref = `/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="text-center mb-4 pt-1">
-        <div className="flex justify-center mb-4">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-col lg:rounded-2xl lg:border lg:border-black/10 lg:bg-white lg:p-8 lg:shadow-sm">
+      <div className="mb-4 pt-1 text-center">
+        <div className="mb-4 flex justify-center">
           <Image src="/logo.png" alt="ShiftTea logo" width={120} height={32} />
         </div>
-        <h1 className="text-xl font-bold text-gray-900">Create a Free Account</h1>
-        <p className="text-sm text-gray-500 mt-1 px-2">Your identity will remain 100% anonymous.</p>
+        <h1 className="text-xl font-bold text-gray-900 lg:text-2xl">Create a Free Account</h1>
+        <p className="mt-1 px-2 text-sm text-gray-500">Your identity will remain 100% anonymous.</p>
       </div>
 
       <div className="space-y-3">
@@ -96,12 +96,21 @@ function SignUpForm() {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (8+ chars, include a number)" required className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400" />
           <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirm password" required className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400" />
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <button type="submit" disabled={busy} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 text-sm">{busy ? 'Creating account…' : 'Continue with Email'}</button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full rounded-xl bg-orange-500 py-3 text-sm font-bold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+          >
+            {busy ? 'Creating account…' : 'Continue with Email'}
+          </button>
         </form>
       </div>
 
       <p className="text-sm text-center text-gray-500 mt-2 pb-2">
-        Already have an account? <Link prefetch={false} href={signinHref} className="text-orange-500 font-medium">Sign in</Link>
+        Already have an account?{' '}
+        <Link prefetch={false} href={signinHref} className="font-medium text-orange-500">
+          Sign in
+        </Link>
       </p>
     </div>
   );

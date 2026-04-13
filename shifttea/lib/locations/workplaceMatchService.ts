@@ -1,5 +1,4 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/lib/firebase/firebase';
+import { apiPost } from '@/lib/api';
 
 export type WorkplaceMatch =
   | {
@@ -27,8 +26,6 @@ export async function matchCustomWorkplace(payload: {
   city: string;
   zip: string;
 }): Promise<WorkplaceMatch[]> {
-  const fn = httpsCallable(functions, 'matchCustomWorkplace');
-  const res = await fn(payload);
-  const data = res.data as { matches?: WorkplaceMatch[] };
+  const data = await apiPost<{ matches?: WorkplaceMatch[] }>('/api/places/match-custom', payload);
   return Array.isArray(data.matches) ? data.matches : [];
 }

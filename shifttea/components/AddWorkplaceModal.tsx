@@ -3,8 +3,7 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { httpsCallable, type FunctionsError } from 'firebase/functions';
-import { db, functions } from '@/lib/firebase/firebase';
+import { db } from '@/lib/firebase/firebase';
 import { LAUNCH_MAP_CENTER } from '@/constants/launchRegion';
 import { makeManualLocationId } from '@/lib/locations/manualLocationId';
 import { containsProfanity } from '@/utils/profanity';
@@ -24,9 +23,6 @@ interface Props {
   flow: AddWorkplaceFlow;
 }
 
-function isFunctionsError(e: unknown): e is FunctionsError {
-  return typeof e === 'object' && e !== null && 'code' in e;
-}
 
 export function AddWorkplaceModal({ open, onClose, flow }: Props) {
   const router = useRouter();
@@ -133,9 +129,7 @@ export function AddWorkplaceModal({ open, onClose, flow }: Props) {
           return;
         }
 
-        const ensure = httpsCallable(functions, 'ensureLocationFromPlace');
-        await ensure({ place_id: m.place_id });
-
+        // Location is created lazily on review submit — just navigate with the details we have
         if (flow === 'locationDetail') {
           router.push(buildLocationHref(m.place_id, m.company_name));
           onClose();
@@ -211,19 +205,11 @@ export function AddWorkplaceModal({ open, onClose, flow }: Props) {
       await proceedManualCreate();
     } catch (e: unknown) {
       console.error(e);
-      if (isFunctionsError(e)) {
-        const msg = (e.message ?? '').toLowerCase();
-        if (e.code === 'functions/invalid-argument') {
-          if (msg.includes('invalid-zip') || msg.includes('zip')) {
-            setError('Use a valid ZIP code (e.g. 08096 — South Jersey only).');
-          } else if (msg.includes('profanity')) {
-            setError('Please remove inappropriate language and try again.');
-          } else {
-            setError('Check your entries and try again.');
-          }
-        } else {
-          setError('Something went wrong. Check your connection and try again.');
-        }
+      const msg = (e instanceof Error ? e.message : '').toLowerCase();
+      if (msg.includes('invalid-zip') || msg.includes('zip')) {
+        setError('Use a valid ZIP code (e.g. 08096 — South Jersey only).');
+      } else if (msg.includes('profanity')) {
+        setError('Please remove inappropriate language and try again.');
       } else {
         setError('Something went wrong. Check your connection and try again.');
       }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   collection,
   doc,
@@ -15,12 +15,13 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { ReviewCard } from '@/components/ReviewCard';
-import { AdPlaceholder } from '@/components/AdPlaceholder';
 import { db } from '@/lib/firebase/firebase';
 import { avgLabel } from '@/utils/formatters';
 import type { LocationDoc, ReviewDoc } from '@/types';
 import { useAuthStore } from '@/lib/firebase/authStore';
 import { getHelpfulVotesForLocation } from '@/lib/review/reviewService';
+import { apiGet } from '@/lib/api';
+import { buildReviewHref } from '@/lib/routes';
 
 const PAGE_SIZE = 5;
 
@@ -57,6 +58,8 @@ const BREAKDOWN_ROWS = [
 
 type SortKey = 'created_desc' | 'created_asc' | 'rating_desc' | 'rating_asc' | 'helpful_desc';
 
+type ReviewsFetchGen = { gen: number; genRef: React.MutableRefObject<number> };
+
 export function LocationDetailView({ id }: { id: string }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -69,38 +72,85 @@ export function LocationDetailView({ id }: { id: string }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [sort, setSort] = useState<SortKey>('created_desc');
   const [helpfulVotes, setHelpfulVotes] = useState<Set<string>>(() => new Set());
+  const reviewsRef = useRef<ReviewDoc[]>([]);
+  reviewsRef.current = reviews;
+  const lastReviewsLocationIdRef = useRef<string | null>(null);
+  const reviewsListFetchGenRef = useRef(0);
 
   const loadLocation = useCallback(async () => {
     const snap = await getDoc(doc(db, 'locations', id));
-    if (!snap.exists()) {
-      setLocation(null);
+    if (snap.exists()) {
+      const d = snap.data();
+      const gp = d.geo_point as { latitude?: number; longitude?: number } | undefined;
+      setLocation({
+        location_id: id,
+        company_name: d.company_name ?? '',
+        address: d.address ?? '',
+        city: d.city ?? '',
+        zip: d.zip ?? '',
+        category: d.category ?? '',
+        avg_rating: d.avg_rating ?? 0,
+        avg_management: d.avg_management,
+        avg_pay: d.avg_pay,
+        avg_worklife: d.avg_worklife,
+        avg_breaks: d.avg_breaks,
+        avg_recommend: d.avg_recommend,
+        review_count: d.review_count ?? 0,
+        geo_point:
+          gp && typeof gp.latitude === 'number'
+            ? { latitude: gp.latitude, longitude: gp.longitude! }
+            : undefined,
+      });
       return;
     }
-    const d = snap.data();
-    const gp = d.geo_point as { latitude?: number; longitude?: number } | undefined;
-    setLocation({
-      location_id: id,
-      company_name: d.company_name ?? '',
-      address: d.address ?? '',
-      city: d.city ?? '',
-      zip: d.zip ?? '',
-      category: d.category ?? '',
-      avg_rating: d.avg_rating ?? 0,
-      avg_management: d.avg_management,
-      avg_pay: d.avg_pay,
-      avg_worklife: d.avg_worklife,
-      avg_breaks: d.avg_breaks,
-      avg_recommend: d.avg_recommend,
-      review_count: d.review_count ?? 0,
-      geo_point:
-        gp && typeof gp.latitude === 'number'
-          ? { latitude: gp.latitude, longitude: gp.longitude! }
-          : undefined,
-    });
+
+    // Not in DB yet — fetch from backend (which validates NJ + launch region)
+    try {
+      const data = await apiGet<{
+        location_id: string;
+        company_name: string;
+        address: string;
+        city: string;
+        zip: string;
+        category: string;
+        lat: number;
+        lng: number;
+        avg_rating: number;
+        avg_management: number | null;
+        avg_pay: number | null;
+        avg_worklife: number | null;
+        avg_breaks: number | null;
+        avg_recommend: number | null;
+        review_count: number;
+      }>(`/api/locations/${encodeURIComponent(id)}`);
+      setLocation({
+        location_id: id,
+        company_name: data.company_name,
+        address: data.address,
+        city: data.city,
+        zip: data.zip,
+        category: data.category,
+        avg_rating: data.avg_rating,
+        avg_management: data.avg_management ?? undefined,
+        avg_pay: data.avg_pay ?? undefined,
+        avg_worklife: data.avg_worklife ?? undefined,
+        avg_breaks: data.avg_breaks ?? undefined,
+        avg_recommend: data.avg_recommend ?? undefined,
+        review_count: data.review_count,
+        geo_point: { latitude: data.lat, longitude: data.lng },
+      });
+    } catch {
+      setLocation(null);
+    }
   }, [id]);
 
   const loadReviews = useCallback(
-    async (cursor: QueryDocumentSnapshot | null, append: boolean, sortKey: SortKey) => {
+    async (
+      cursor: QueryDocumentSnapshot | null,
+      append: boolean,
+      sortKey: SortKey,
+      fetchGen?: ReviewsFetchGen,
+    ) => {
       const base = collection(db, 'locations', id, 'reviews');
       const [orderField, orderDir] =
         sortKey === 'created_desc'
@@ -117,6 +167,7 @@ export function LocationDetailView({ id }: { id: string }) {
         ? query(base, orderBy(orderField, orderDir), startAfter(cursor), limit(PAGE_SIZE))
         : query(base, orderBy(orderField, orderDir), limit(PAGE_SIZE));
       const snap = await getDocs(q);
+      if (fetchGen && fetchGen.genRef.current !== fetchGen.gen) return;
       const list = snap.docs.map((d) => mapReview(d.id, d.data() as Record<string, unknown>));
       setReviews((prev) => (append ? [...prev, ...list] : list));
       setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
@@ -159,26 +210,34 @@ export function LocationDetailView({ id }: { id: string }) {
   }, [loadLocation]);
 
   useEffect(() => {
+    const gen = ++reviewsListFetchGenRef.current;
     let cancelled = false;
+    const locationChanged = lastReviewsLocationIdRef.current !== id;
+    lastReviewsLocationIdRef.current = id;
+
     (async () => {
       setLoadingReviews(true);
-      setReviews([]);
+      if (locationChanged || reviewsRef.current.length === 0) {
+        setReviews([]);
+      }
       setLastDoc(null);
       setHasMore(true);
       try {
-        await loadReviews(null, false, sort);
+        await loadReviews(null, false, sort, { gen, genRef: reviewsListFetchGenRef });
       } finally {
-        if (!cancelled) setLoadingReviews(false);
+        if (!cancelled && gen === reviewsListFetchGenRef.current) {
+          setLoadingReviews(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [sort, loadReviews]);
+  }, [sort, loadReviews, id]);
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 lg:mx-auto lg:max-w-6xl">
         <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
         <div className="h-4 w-64 animate-pulse rounded bg-gray-100" />
         <div className="h-32 animate-pulse rounded-xl bg-gray-100" />
@@ -198,22 +257,24 @@ export function LocationDetailView({ id }: { id: string }) {
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => router.push('/locations/')}
-        className="mb-4 flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-600"
-      >
-        <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Search
-      </button>
+    <div className="lg:mx-auto lg:max-w-6xl">
+      <div className="mb-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => router.push('/locations/')}
+          className="flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-600"
+        >
+          <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Search
+        </button>
+      </div>
 
-      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:rounded-2xl lg:border-black/10 lg:p-6">
         <div className="mb-2 flex items-start justify-between gap-2">
-          <h1 className="text-xl font-bold text-gray-900">{location.company_name}</h1>
-          <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-xs font-medium capitalize text-amber-700">
+          <h1 className="text-xl font-bold text-gray-900 lg:text-3xl">{location.company_name}</h1>
+          <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-xs font-medium capitalize text-amber-700 lg:text-sm">
             {location.category}
           </span>
         </div>
@@ -224,14 +285,23 @@ export function LocationDetailView({ id }: { id: string }) {
           </svg>
           <span>{location.address}</span>
         </div>
-        {location.city && <p className="text-sm font-medium text-orange-500">{location.city}, NJ {location.zip}</p>}
+        {location.city && (
+          <p className="text-sm font-medium text-orange-500 lg:text-base">{location.city}, NJ {location.zip}</p>
+        )}
       </div>
 
-      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-5 text-center shadow-sm">
-        <p className="mb-1 text-6xl font-bold text-orange-500">{avgLabel(location.avg_rating)}</p>
+      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-5 text-center shadow-sm lg:rounded-2xl lg:border-black/10 lg:p-8">
+        <p className="mb-1 text-6xl font-bold text-orange-500 lg:text-7xl">{avgLabel(location.avg_rating)}</p>
         <div className="mb-2 flex justify-center">
           {[1, 2, 3, 4, 5].map((s) => (
-            <svg key={s} width={24} height={24} viewBox="0 0 20 20" fill={s <= Math.round(location.avg_rating) ? '#f59e0b' : '#d1d5db'}>
+            <svg
+              key={s}
+              width={24}
+              height={24}
+              viewBox="0 0 20 20"
+              className="lg:h-8 lg:w-8"
+              fill={s <= Math.round(location.avg_rating) ? '#f97316' : '#d1d5db'}
+            >
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           ))}
@@ -241,8 +311,8 @@ export function LocationDetailView({ id }: { id: string }) {
         </p>
       </div>
 
-      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 font-bold text-gray-900">Rating Breakdown</h2>
+      <div className="mb-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:rounded-2xl lg:border-black/10 lg:p-6">
+        <h2 className="mb-3 font-bold text-gray-900 lg:text-xl">Rating Breakdown</h2>
         <div className="space-y-2.5">
           {BREAKDOWN_ROWS.map(({ key, label }) => {
             const val = key === 'avg_rating' ? location.avg_rating : location[key];
@@ -251,7 +321,13 @@ export function LocationDetailView({ id }: { id: string }) {
                 <span className="w-36 shrink-0 text-sm text-gray-600">{label}</span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <svg key={s} width={14} height={14} viewBox="0 0 20 20" fill={s <= Math.round(val ?? 0) ? '#f59e0b' : '#d1d5db'}>
+                    <svg
+                      key={s}
+                      width={14}
+                      height={14}
+                      viewBox="0 0 20 20"
+                      fill={s <= Math.round(val ?? 0) ? '#f97316' : '#d1d5db'}
+                    >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
@@ -263,14 +339,32 @@ export function LocationDetailView({ id }: { id: string }) {
         </div>
       </div>
 
-      <AdPlaceholder slot="feed" />
+      <div className="mb-6 hidden justify-center lg:flex">
+        <Link
+          prefetch={false}
+          href={buildReviewHref({
+            locationId: location.location_id,
+            companyName: location.company_name,
+            address: location.address,
+            city: location.city,
+            zip: location.zip,
+            category: location.category?.trim() || 'business',
+            lat: String(location.geo_point?.latitude ?? 39.79),
+            lng: String(location.geo_point?.longitude ?? -74.97),
+          })}
+          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-8 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600"
+        >
+          Write a review
+        </Link>
+      </div>
 
-      <div className="mb-3 mt-4 flex items-center justify-between">
-        <h2 className="font-bold text-gray-900">Reviews ({location.review_count})</h2>
+      <div className="mb-3 mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mt-8">
+        <h2 className="font-bold text-gray-900 lg:text-xl">Reviews ({location.review_count})</h2>
         <select
           value={sort}
+          disabled={loadingReviews}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400 enabled:cursor-pointer disabled:cursor-wait disabled:opacity-70 lg:min-w-[12rem]"
         >
           <option value="helpful_desc">Most helpful</option>
           <option value="rating_desc">Highest to Lowest Rated</option>
@@ -280,15 +374,31 @@ export function LocationDetailView({ id }: { id: string }) {
         </select>
       </div>
 
-      <div className="space-y-3">
-        {loadingReviews ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" aria-label="Loading reviews" />
-          </div>
-        ) : (
-          reviews.map((r, i) => (
-            <Fragment key={r.review_id}>
+      {loadingReviews && reviews.length === 0 ? (
+        <div className="flex min-h-[12rem] items-center justify-center rounded-xl border border-gray-100 bg-white py-12 shadow-sm lg:rounded-2xl lg:border-black/10">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500"
+            aria-label="Loading reviews"
+          />
+        </div>
+      ) : reviews.length > 0 ? (
+        <div className="relative overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm lg:rounded-2xl lg:border-black/10">
+          {loadingReviews ? (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-white/65 backdrop-blur-[2px]"
+              role="status"
+              aria-label="Updating reviews"
+            >
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" />
+            </div>
+          ) : null}
+          {reviews.map((r) => (
+            <div
+              key={r.review_id}
+              className="border-b-2 border-gray-200 last:border-b-0"
+            >
               <ReviewCard
+                variant="list"
                 review={r}
                 initialHelpful={helpfulVotes.has(r.review_id)}
                 onHelpfulChange={(next) => {
@@ -300,13 +410,10 @@ export function LocationDetailView({ id }: { id: string }) {
                   });
                 }}
               />
-              {(i + 1) % 3 === 0 && i < reviews.length - 1 && (
-                <AdPlaceholder slot="in-review" />
-              )}
-            </Fragment>
-          ))
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {hasMore && !loadingReviews && (
         <button
@@ -321,13 +428,13 @@ export function LocationDetailView({ id }: { id: string }) {
             }
           }}
           disabled={loadingMore}
-          className="mt-4 w-full rounded-xl border border-orange-200 py-3 text-sm font-semibold text-orange-500 transition-colors hover:bg-orange-50 disabled:opacity-50"
+          className="mt-4 w-full rounded-xl bg-orange-500 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600 disabled:opacity-50"
         >
           {loadingMore ? 'Loading…' : 'Next page'}
         </button>
       )}
 
-      {reviews.length === 0 && !loading && (
+      {reviews.length === 0 && !loadingReviews && !loading && (
         <p className="py-8 text-center text-sm text-gray-400">No reviews yet. Be the first!</p>
       )}
     </div>

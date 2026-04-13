@@ -14,7 +14,7 @@ export function LocationsPageClient() {
   }
 
   return (
-    <div>
+    <div className="lg:mx-auto lg:max-w-3xl">
       <FindWorkplaceForm
         variant="locations"
         title="Find a workplace"
