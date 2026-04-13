@@ -1,5 +1,5 @@
 export const LAUNCH_MAP_CENTER = { lat: 39.79, lng: -74.82 } as const;
-export const LAUNCH_RADIUS_KM = 40;
+export const LAUNCH_RADIUS_KM = 50;
 
 export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371;

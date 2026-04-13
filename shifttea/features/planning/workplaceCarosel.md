@@ -1,0 +1,1 @@
+on the location search page have a screen rotating list of popular workplaces spinning below the search bar

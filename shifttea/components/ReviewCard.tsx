@@ -14,14 +14,21 @@ interface Props {
   review: ReviewDoc;
   initialHelpful?: boolean;
   onHelpfulChange?: (helpful: boolean) => void;
+  /** `list` = full-width row (location page); default card grid on home/account */
+  variant?: 'card' | 'list';
 }
 
 function MiniStars({ value }: { value: number }) {
   return (
     <div className="flex gap-0.5">
-      {[1,2,3,4,5].map((s) => (
-        <svg key={s} width={12} height={12} viewBox="0 0 20 20"
-          fill={s <= Math.round(value) ? '#f59e0b' : '#d1d5db'}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg
+          key={s}
+          width={12}
+          height={12}
+          viewBox="0 0 20 20"
+          fill={s <= Math.round(value) ? '#f97316' : '#d1d5db'}
+        >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
@@ -29,7 +36,7 @@ function MiniStars({ value }: { value: number }) {
   );
 }
 
-export function ReviewCard({ review, initialHelpful, onHelpfulChange }: Props) {
+export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 'card' }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,13 +58,18 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange }: Props) {
     ? new Date(review.created_at as unknown as string)
     : null;
 
+  const shell =
+    variant === 'list'
+      ? 'group border-0 bg-white p-4 shadow-none transition-colors lg:p-5 lg:hover:bg-gray-50/60'
+      : 'group rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 lg:border-black/10 lg:p-6 lg:hover:-translate-y-1 lg:hover:border-orange-500 lg:hover:shadow-lg';
+
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+    <div className={shell}>
       <div className="mb-2">
         <Link
           prefetch={false}
           href={buildLocationHref(review.location_id, review.company_name)}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900 hover:text-orange-500 transition-colors"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900 transition-colors hover:text-orange-500 lg:text-base"
           aria-label={`View ${review.company_name} location page`}
         >
           <span>{review.company_name}</span>
@@ -84,9 +96,15 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange }: Props) {
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <div className="flex gap-0.5">
-            {[1,2,3,4,5].map((s) => (
-              <svg key={s} width={16} height={16} viewBox="0 0 20 20"
-                fill={s <= Math.round(review.rating_overall) ? '#f59e0b' : '#d1d5db'}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <svg
+                key={s}
+                width={16}
+                height={16}
+                viewBox="0 0 20 20"
+                className="lg:h-5 lg:w-5"
+                fill={s <= Math.round(review.rating_overall) ? '#f97316' : '#d1d5db'}
+              >
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
@@ -191,7 +209,7 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange }: Props) {
         <span className="text-xs text-gray-400">{helpfulCount}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-2 border-t border-gray-50">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-gray-50 pt-2 lg:rounded-lg lg:bg-gray-50/80 lg:p-4 lg:pt-4">
         <div>
           <p className="text-xs text-gray-400 mb-0.5">Management</p>
           <MiniStars value={review.rating_management} />

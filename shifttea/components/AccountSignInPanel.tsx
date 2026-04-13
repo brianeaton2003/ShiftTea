@@ -33,6 +33,7 @@ function AccountSignInForm() {
   const { signIn, signInWithGoogle } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -70,13 +71,13 @@ function AccountSignInForm() {
   const signupHref = `/auth/signup?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="text-center mb-4 pt-1">
-        <div className="flex justify-center mb-3">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-col lg:rounded-2xl lg:border lg:border-black/10 lg:bg-white lg:p-8 lg:shadow-sm">
+      <div className="mb-4 pt-1 text-center">
+        <div className="mb-3 flex justify-center">
           <Image src="/logo.png" alt="ShiftTea logo" width={120} height={32} />
         </div>
-        <h1 className="text-xl font-bold text-gray-900">Sign in to your account</h1>
-        <p className="text-sm text-gray-500 mt-1 px-2">
+        <h1 className="text-xl font-bold text-gray-900 lg:text-2xl">Sign in to your account</h1>
+        <p className="mt-1 px-2 text-sm text-gray-500">
           Sign in to continue. New here? You can create an account below. Your identity stays anonymous on every review.
         </p>
       </div>
@@ -114,7 +115,7 @@ function AccountSignInForm() {
             <div className="w-full border-t border-gray-100" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-[var(--background)] px-3 text-xs text-gray-400">or</span>
+            <span className="bg-white px-3 text-xs text-gray-400">or</span>
           </div>
         </div>
 
@@ -127,19 +128,55 @@ function AccountSignInForm() {
             required
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-gray-200 py-3 pl-4 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-1 flex w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? (
+                <svg width={20} height={20} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                  />
+                </svg>
+              ) : (
+                <svg width={20} height={20} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={busy}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 text-sm"
+            className="w-full rounded-xl bg-orange-500 py-3 text-sm font-bold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
           >
             {busy ? 'Signing in…' : 'Continue with Email'}
           </button>
@@ -150,14 +187,14 @@ function AccountSignInForm() {
         Your reviews are always anonymous. We never share your identity.
       </p>
       <p className="text-xs text-center text-gray-500 mt-2">
-        <Link prefetch={false} href="/terms" className="text-orange-500 font-medium hover:text-orange-600">
+        <Link prefetch={false} href="/terms/" className="font-medium text-orange-500 hover:text-orange-600">
           See our Terms of Service
         </Link>
       </p>
 
       <p className="text-sm text-center text-gray-500 mt-2 pb-2">
         No account?{' '}
-        <Link prefetch={false} href={signupHref} className="text-orange-500 font-medium">
+        <Link prefetch={false} href={signupHref} className="font-medium text-orange-500">
           Sign up
         </Link>
       </p>

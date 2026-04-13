@@ -1,10 +1,9 @@
 'use client';
 
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { initializeAppCheck, ReCaptchaV3Provider, getToken, type AppCheck } from 'firebase/app-check';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
-import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -32,7 +31,6 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const functions = getFunctions(app, 'us-central1');
 
 const emulatorFlag = process.env.NEXT_PUBLIC_FIREBASE_USE_EMULATORS === 'true';
 
@@ -59,12 +57,7 @@ if (useEmulators) {
   try {
     connectFirestoreEmulator(db, emulatorHost, 8080);
   } catch {}
-  try {
-    connectFunctionsEmulator(functions, emulatorHost, 5001);
-  } catch {}
 }
-
-let appCheck: AppCheck | undefined;
 
 if (typeof window !== 'undefined') {
   if (useEmulators) {
@@ -73,24 +66,10 @@ if (typeof window !== 'undefined') {
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   if (siteKey) {
     try {
-      appCheck = initializeAppCheck(app, {
+      initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(siteKey),
         isTokenAutoRefreshEnabled: true,
       });
     } catch {}
-  } else if (!useEmulators) {
-    console.warn(
-      '[ShiftTea] NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set. Enable App Check in Firebase Console and add the reCAPTCHA v3 site key.',
-    );
-  }
-}
-
-export async function getAppCheckHeaders(): Promise<HeadersInit> {
-  if (!appCheck) return {};
-  try {
-    const { token } = await getToken(appCheck, false);
-    return { 'X-Firebase-AppCheck': token };
-  } catch {
-    return {};
   }
 }

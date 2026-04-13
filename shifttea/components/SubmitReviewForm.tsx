@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { StarRating } from '@/components/StarRating';
 import { isAlreadyReviewedError, submitReview } from '@/lib/review/reviewService';
 import type { SubmitReviewPayload } from '@/types';
-import { PATH_REVIEW_SELECT_LOCATION } from '@/lib/routes';
+import { buildLocationHref, PATH_REVIEW_SELECT_LOCATION } from '@/lib/routes';
 
 const RATINGS = [
   { key: 'overall', label: 'Overall *' },
@@ -115,26 +115,43 @@ export function SubmitReviewForm({
     }
   };
 
+  const locationPageHref = buildLocationHref(locationId, companyName);
+
   return (
-    <form onSubmit={onSubmit}>
-      <button
-        type="button"
-        onClick={() => router.push(PATH_REVIEW_SELECT_LOCATION)}
-        className="flex items-center gap-1 text-gray-400 text-sm mb-4 hover:text-gray-600 transition-colors"
-      >
-        <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
+    <form onSubmit={onSubmit} className="lg:mx-auto lg:max-w-2xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => router.push(PATH_REVIEW_SELECT_LOCATION)}
+          className="flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-800 lg:text-base"
+        >
+          <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <Link
+          prefetch={false}
+          href={locationPageHref}
+          className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm font-semibold text-orange-600 shadow-sm transition-colors hover:bg-orange-50"
+        >
+          Go to this location
+          <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-4-4l4 4-4 4" />
+          </svg>
+        </Link>
+      </div>
 
-      <h1 className="text-xl font-bold text-gray-900">{companyName}</h1>
-      {address && <p className="text-sm text-gray-400 mt-1 mb-4">{address}</p>}
+      <h1 className="text-xl font-bold text-gray-900 lg:text-3xl">{companyName}</h1>
+      {address && <p className="mt-1 mb-4 text-sm text-gray-500 lg:text-base">{address}</p>}
 
-      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4 space-y-4">
+      <div className="mb-4 space-y-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:space-y-3.5 lg:rounded-2xl lg:border-black/10 lg:p-6">
+        <p className="-mt-1 text-right text-xs text-gray-500" role="note">
+          <span className="font-semibold text-gray-700">*</span> Required
+        </p>
         {RATINGS.map(({ key, label }) => (
-          <div key={key}>
-            <p className="text-sm text-gray-500 mb-2">{label}</p>
+          <div key={key} className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="w-44 max-w-full shrink-0 text-sm leading-snug text-gray-500">{label}</span>
             <StarRating
               value={ratings[key]}
               onChange={(v) => setRatings((prev) => ({ ...prev, [key]: v }))}
@@ -144,7 +161,7 @@ export function SubmitReviewForm({
         ))}
       </div>
 
-      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4 space-y-4">
+      <div className="mb-4 space-y-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:rounded-2xl lg:border-black/10 lg:p-6">
         <div>
           <label className="text-sm text-gray-500 block mb-1.5">Hourly pay (optional)</label>
           <input
@@ -175,7 +192,7 @@ export function SubmitReviewForm({
             Keep it anonymous: do not include names, personal details, phone numbers, emails, or social handles.
           </p>
           <p className="mb-2 text-xs text-gray-500">
-            <Link prefetch={false} href="/terms" className="text-orange-600 hover:text-orange-700 underline underline-offset-2">
+            <Link prefetch={false} href="/terms/" className="text-orange-600 underline underline-offset-2 hover:text-orange-700">
               See our Terms of Service
             </Link>
           </p>
@@ -196,7 +213,7 @@ export function SubmitReviewForm({
       <button
         type="submit"
         disabled={!ratingsReady || submitting}
-        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-40 text-sm"
+        className="w-full rounded-full bg-orange-500 py-3.5 text-sm font-bold text-white transition-colors hover:bg-orange-600 disabled:opacity-40 lg:py-4 lg:text-base"
       >
         {submitting ? 'Submitting…' : 'Submit review'}
       </button>

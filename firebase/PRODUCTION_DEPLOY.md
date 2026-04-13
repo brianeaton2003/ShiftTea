@@ -22,7 +22,7 @@ firebase use
 
 ## 2) Configure required secrets
 
-`placesProxy` and `ensureLocationFromPlace` require a Google Places key.
+`placesProxy`, `ensureLocationFromPlace`, and `matchCustomWorkplace` use **Places API (New)** (`places.googleapis.com`) and need a Google Maps API key with **Places API (New)** enabled in the same GCP project. `placesProxy` geocoding and `matchCustomWorkplace` address fallback still call the **Geocoding API** — enable that API as well.
 
 ```bash
 firebase functions:secrets:set GOOGLE_PLACES_API_KEY_SECRET
@@ -37,7 +37,7 @@ firebase deploy --only functions
 
 ## 4) Post-deploy quick checks
 
-- `placesProxy` HTTP endpoint returns responses from Google Places.
+- `placesProxy` HTTP endpoint returns Autocomplete (New) and Place Details (New) JSON (and Geocoding API JSON for `action=geocode`).
 - Callable functions succeed:
   - `submitReview`
   - `toggleReviewHelpful`
