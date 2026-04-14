@@ -1,19 +1,38 @@
 {
   "name": "shifttea",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "npm install --prefix shifttea",
-    "dev": "npm run dev --prefix shifttea",
-    "build": "npm run build --prefix shifttea",
-    "deploy:dev": "cd firebase && npx firebase deploy --project dev",
-    "deploy:prod": "cd firebase && npx firebase deploy --project prod"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2",
-    "firebase-tools": "^15.13.0",
-    "wait-on": "^8.0.3"
+    "dev": "next dev",
+    "build": "next build --webpack && node scripts/create-export-aliases.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "firebase": "^12.11.0"
+    "firebase": "^12.11.0",
+    "firebase-admin": "^13.8.0",
+    "framer-motion": "^12.38.0",
+    "leo-profanity": "^1.9.0",
+    "next": "16.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20.19.37",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "jsdom": "^29.0.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.2"
   }
 }

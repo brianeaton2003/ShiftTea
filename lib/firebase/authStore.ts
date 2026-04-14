@@ -53,9 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           uid: cred.user.uid,
           email: cred.user.email ?? '',
           auth_provider: 'google',
-          created_at: serverTimestamp(),
-          review_count: 0,
-          my_reviews: [],
+          last_seen_at: serverTimestamp(),
         },
         { merge: true },
       );

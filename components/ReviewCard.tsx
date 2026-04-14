@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReviewDoc } from '@/types';
 import { formatRelativeTime } from '@/utils/formatters';
 import { Timestamp } from 'firebase/firestore';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useAuthStore } from '@/lib/firebase/authStore';
 import { toggleReviewHelpful } from '@/lib/review/reviewService';
 import { buildLocationHref } from '@/lib/routes';
@@ -14,6 +14,7 @@ interface Props {
   review: ReviewDoc;
   initialHelpful?: boolean;
   onHelpfulChange?: (helpful: boolean) => void;
+  isOwnReview?: boolean;
   /** `list` = full-width row (location page); default card grid on home/account */
   variant?: 'card' | 'list';
 }
@@ -36,7 +37,13 @@ function MiniStars({ value }: { value: number }) {
   );
 }
 
-export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 'card' }: Props) {
+export function ReviewCard({
+  review,
+  initialHelpful,
+  onHelpfulChange,
+  isOwnReview = false,
+  variant = 'card',
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,6 +58,14 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 
   const [helpful, setHelpful] = useState<boolean>(Boolean(initialHelpful));
   const [helpfulCount, setHelpfulCount] = useState<number>(Number(review.helpful_count ?? 0));
   const [helpfulBusy, setHelpfulBusy] = useState(false);
+  useEffect(() => {
+    setHelpful(Boolean(initialHelpful));
+  }, [initialHelpful]);
+
+  useEffect(() => {
+    setHelpfulCount(Number(review.helpful_count ?? 0));
+  }, [review.helpful_count]);
+
   const bodyId = useId();
   const date = review.created_at instanceof Timestamp
     ? review.created_at.toDate()
@@ -165,17 +180,14 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 
       <div className="flex items-center justify-between gap-2 mb-3">
         <button
           type="button"
-          disabled={helpfulBusy}
+          disabled={helpfulBusy || isOwnReview}
+          title={isOwnReview ? "You can't mark your own review as helpful." : undefined}
+          aria-label={isOwnReview ? "You can't mark your own review as helpful." : 'Mark this review as helpful'}
           onClick={async () => {
             if (!user) {
               router.push(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
               return;
             }
-            const next = !helpful;
-            setHelpful(next);
-            setHelpfulCount((c) => Math.max(0, c + (next ? 1 : -1)));
-            onHelpfulChange?.(next);
-
             setHelpfulBusy(true);
             try {
               const res = await toggleReviewHelpful({ location_id: review.location_id, review_id: review.review_id });
@@ -183,9 +195,7 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 
               setHelpfulCount(Number(res.helpful_count ?? 0));
               onHelpfulChange?.(Boolean(res.helpful));
             } catch {
-              setHelpful((cur) => !cur);
-              setHelpfulCount((c) => Math.max(0, c + (next ? -1 : 1)));
-              onHelpfulChange?.(!next);
+              // Keep the existing UI state if request fails.
             } finally {
               setHelpfulBusy(false);
             }
@@ -204,7 +214,7 @@ export function ReviewCard({ review, initialHelpful, onHelpfulChange, variant = 
               d="M14 9V5a3 3 0 00-6 0v4m-2 0h12l-1 11H7L6 9z"
             />
           </svg>
-          This was helpful
+          {isOwnReview ? 'Your review' : 'This was helpful'}
         </button>
         <span className="text-xs text-gray-400">{helpfulCount}</span>
       </div>

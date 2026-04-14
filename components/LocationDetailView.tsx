@@ -19,7 +19,7 @@ import { db } from '@/lib/firebase/firebase';
 import { avgLabel } from '@/utils/formatters';
 import type { LocationDoc, ReviewDoc } from '@/types';
 import { useAuthStore } from '@/lib/firebase/authStore';
-import { getHelpfulVotesForLocation } from '@/lib/review/reviewService';
+import { getHelpfulVotesForLocation, getUserReviews } from '@/lib/review/reviewService';
 import { apiGet } from '@/lib/api';
 import { buildReviewHref } from '@/lib/routes';
 
@@ -72,6 +72,7 @@ export function LocationDetailView({ id }: { id: string }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [sort, setSort] = useState<SortKey>('created_desc');
   const [helpfulVotes, setHelpfulVotes] = useState<Set<string>>(() => new Set());
+  const [ownReviewIds, setOwnReviewIds] = useState<Set<string>>(() => new Set());
   const reviewsRef = useRef<ReviewDoc[]>([]);
   reviewsRef.current = reviews;
   const lastReviewsLocationIdRef = useRef<string | null>(null);
@@ -188,6 +189,30 @@ export function LocationDetailView({ id }: { id: string }) {
       })
       .catch(() => {
         if (!cancelled) setHelpfulVotes(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, id]);
+
+  useEffect(() => {
+    if (!user) {
+      setOwnReviewIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    getUserReviews()
+      .then((myReviews) => {
+        if (cancelled) return;
+        const ids = new Set(
+          myReviews
+            .filter((r) => r.location_id === id)
+            .map((r) => r.review_id),
+        );
+        setOwnReviewIds(ids);
+      })
+      .catch(() => {
+        if (!cancelled) setOwnReviewIds(new Set());
       });
     return () => {
       cancelled = true;
@@ -401,6 +426,7 @@ export function LocationDetailView({ id }: { id: string }) {
                 variant="list"
                 review={r}
                 initialHelpful={helpfulVotes.has(r.review_id)}
+                isOwnReview={ownReviewIds.has(r.review_id)}
                 onHelpfulChange={(next) => {
                   setHelpfulVotes((prev) => {
                     const n = new Set(prev);

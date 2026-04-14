@@ -47,7 +47,7 @@ export default function MyReviewsPage() {
             >
               {review.company_name}
             </Link>
-            <ReviewCard review={review} />
+            <ReviewCard review={review} isOwnReview />
           </div>
         ))}
       </div>

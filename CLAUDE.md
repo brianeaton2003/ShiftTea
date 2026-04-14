@@ -1,3 +1,5 @@
+@AGENTS.md
+
 ShiftTea
 Product Requirements Document
 Version 1.0  ·  March 2026  ·  Confidential

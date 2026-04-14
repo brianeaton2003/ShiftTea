@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 
@@ -11,23 +11,24 @@ export function MobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
   const showReviewCta = !pathname.startsWith('/review');
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const updateScrollTopVisibility = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const { scrollTop, scrollHeight, clientHeight } = el;
-    const maxScroll = scrollHeight - clientHeight;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const doc = document.documentElement;
+    const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
     setShowScrollTop(maxScroll > 100 && scrollTop > maxScroll * 0.5);
   }, []);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+    // Clear stale scroll locks left behind by overlays/hot reload.
+    if (document.body.style.overflow === 'hidden') {
+      document.body.style.overflow = '';
+    }
+
     updateScrollTopVisibility();
-    el.addEventListener('scroll', updateScrollTopVisibility, { passive: true });
-    return () => el.removeEventListener('scroll', updateScrollTopVisibility);
+    window.addEventListener('scroll', updateScrollTopVisibility, { passive: true });
+    return () => window.removeEventListener('scroll', updateScrollTopVisibility);
   }, [pathname, updateScrollTopVisibility]);
 
   // With `trailingSlash: true`, location list/detail layouts use `/locations/`, not `/locations`.
@@ -44,7 +45,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
     : '/review/select-location/';
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-orange-50">
+    <div className="flex min-h-[100dvh] w-full flex-1 flex-col bg-orange-50">
       <Navbar />
 
       <motion.div
@@ -52,20 +53,15 @@ export function MobileShell({ children }: { children: ReactNode }) {
         initial={{ opacity: 0.88, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <div
-          ref={scrollRef}
-          className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
-        >
-          <div className="flex min-h-full w-full flex-col">
-            <div className="grow px-4 pb-6 pt-[calc(3.5rem+env(safe-area-inset-top,0px)+0.75rem)] sm:px-6 md:px-6 md:pt-[calc(3.5rem+env(safe-area-inset-top,0px)+1rem)] lg:px-8 lg:pt-[calc(3.5rem+env(safe-area-inset-top,0px)+1.25rem)]">
-              {children}
-            </div>
-            <SiteFooter padBottomForMobileCta={showReviewCta} />
+        <div className="flex min-h-full w-full flex-col">
+          <div className="grow px-4 pb-6 pt-[calc(3.5rem+env(safe-area-inset-top,0px)+0.75rem)] sm:px-6 md:px-6 md:pt-[calc(3.5rem+env(safe-area-inset-top,0px)+1rem)] lg:px-8 lg:pt-[calc(3.5rem+env(safe-area-inset-top,0px)+1.25rem)]">
+            {children}
           </div>
+          <SiteFooter padBottomForMobileCta={showReviewCta} />
         </div>
-      </motion.div>
+     </motion.div>
 
       {showScrollTop ? (
         <div
@@ -79,7 +75,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
             type="button"
             aria-label="Back to top"
             className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition-colors hover:bg-orange-600 active:bg-orange-600"
-            onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <svg width={22} height={22} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />

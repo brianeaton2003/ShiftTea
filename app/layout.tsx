@@ -11,15 +11,17 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#fff7ed',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-dvh overflow-hidden">
+    <html lang="en" className="min-h-full">
       <body
-        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white antialiased"
+        className="flex min-h-screen w-full flex-col bg-white antialiased"
         suppressHydrationWarning
       >
         <AuthProvider>{children}</AuthProvider>
