@@ -24,9 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             uid: redirectUser.uid,
             email: redirectUser.email ?? '',
             auth_provider: 'google',
-            created_at: serverTimestamp(),
-            review_count: 0,
-            my_reviews: [],
+            last_seen_at: serverTimestamp(),
           },
           { merge: true },
         );
@@ -53,9 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               uid: user.uid,
               email: user.email ?? '',
               auth_provider: authProvider,
-              created_at: serverTimestamp(),
-              review_count: 0,
-              my_reviews: [],
+              last_seen_at: serverTimestamp(),
             },
             { merge: true },
           );
@@ -74,7 +70,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [setUser, setLoading]);
 
-  return (
-    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">{children}</div>
-  );
+  return <div className="flex min-h-full w-full flex-1 flex-col">{children}</div>;
 }

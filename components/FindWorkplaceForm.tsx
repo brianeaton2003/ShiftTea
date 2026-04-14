@@ -30,6 +30,7 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
   const [searching, setSearching] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [addWorkplaceOpen, setAddWorkplaceOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +42,7 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
 
   useEffect(() => {
     setSelectionError(null);
+    setSearchError(null);
     if (timer.current) clearTimeout(timer.current);
     if (query.trim().length < 2) {
       setRows([]);
@@ -85,6 +87,9 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
         }
 
         setRows([...localRows, ...googleRows]);
+      } catch {
+        setRows([]);
+        setSearchError('Search is unavailable right now. Please try again in a moment.');
       } finally {
         setSearching(false);
       }
@@ -228,6 +233,12 @@ export function FindWorkplaceForm({ variant, title, description, leading }: Prop
           </div>
         )}
       </div>
+
+      {searchError ? (
+        <p className="mb-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {searchError}
+        </p>
+      ) : null}
 
       {rows.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm lg:rounded-2xl lg:border-black/10">

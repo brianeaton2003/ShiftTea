@@ -2,7 +2,15 @@
 
 import { getAuth } from 'firebase/auth';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+function getBackendUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined') {
+    // Use the same host device on LAN (phone -> dev machine) when env var is unset.
+    return `${window.location.protocol}//${window.location.hostname}:3000`;
+  }
+  return 'http://localhost:3000';
+}
 
 async function getIdToken(forceRefresh = false): Promise<string | null> {
   const user = getAuth().currentUser;
@@ -12,7 +20,7 @@ async function getIdToken(forceRefresh = false): Promise<string | null> {
 
 /** Unauthenticated GET to the backend. */
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_URL}${path}`);
+  const res = await fetch(`${getBackendUrl()}${path}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw Object.assign(new Error(body.error ?? `api-error-${res.status}`), { status: res.status });
@@ -26,7 +34,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   if (!token) throw new Error('unauthenticated');
 
   const doFetch = (idToken: string) =>
-    fetch(`${BACKEND_URL}${path}`, {
+    fetch(`${getBackendUrl()}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +62,7 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
   if (!token) throw new Error('unauthenticated');
 
   const doFetch = (idToken: string) =>
-    fetch(`${BACKEND_URL}${path}`, {
+    fetch(`${getBackendUrl()}${path}`, {
       headers: { Authorization: `Bearer ${idToken}` },
     });
 

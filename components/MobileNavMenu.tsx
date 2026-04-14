@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const HEADER_OFFSET = 'calc(3.5rem + env(safe-area-inset-top, 0px))';
@@ -14,17 +14,34 @@ type Props = {
 export function MobileNavMenu({ accountLabel }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const prevBodyOverflowRef = useRef<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    // Keep scroll lock resilient during remounts/hot reloads.
+    if (open) {
+      if (prevBodyOverflowRef.current === null) {
+        prevBodyOverflowRef.current = document.body.style.overflow;
+      }
+      document.body.style.overflow = 'hidden';
+      return;
+    }
+
+    if (prevBodyOverflowRef.current !== null) {
+      document.body.style.overflow = prevBodyOverflowRef.current;
+      prevBodyOverflowRef.current = null;
+    }
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (prevBodyOverflowRef.current !== null) {
+        document.body.style.overflow = prevBodyOverflowRef.current;
+        prevBodyOverflowRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <>
