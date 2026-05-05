@@ -6,16 +6,19 @@ import { Timestamp } from 'firebase/firestore';
 import { apiPost, apiAuthGet } from '@/lib/api';
 import type { ReviewDoc, SubmitReviewPayload } from '@/types';
 
-// ─── Submit review ────────────────────────────────────────────────────────────
-
-export async function submitReview(
-  payload: SubmitReviewPayload & { place_id?: string },
-): Promise<{ success: boolean; review_id: string }> {
+/**
+ * Submit a review to the backend.s
+ * @param payload - The payload to submit the review.
+ * @returns The success of the review submission.
+ */
+export async function submitReview(payload: SubmitReviewPayload & { place_id?: string }): Promise<{ success: boolean; review_id: string }> {
   return apiPost('/api/reviews', payload);
 }
 
-// ─── Get user's own reviews (direct Firestore read) ───────────────────────────
-
+/**
+ * Get the user's own reviews from the backend.
+ * @returns The user's own reviews.
+ */
 function toTimestamp(c: unknown): Timestamp | null {
   if (!c) return null;
   if (typeof c === 'string' && c) return Timestamp.fromDate(new Date(c));
@@ -81,8 +84,11 @@ export async function getUserReviews(): Promise<ReviewDoc[]> {
   });
 }
 
-// ─── Toggle helpful vote ──────────────────────────────────────────────────────
-
+/**
+ * Toggle the helpful vote for a review.
+ * @param payload - The payload to toggle the helpful vote.
+ * @returns The helpful vote status and the helpful count.
+ */
 export async function toggleReviewHelpful(payload: {
   location_id: string;
   review_id: string;
@@ -92,8 +98,11 @@ export async function toggleReviewHelpful(payload: {
   });
 }
 
-// ─── Get helpful votes for a location (server-side, needs uid_hash) ───────────
-
+/**
+ * Get the helpful votes for a location.
+ * @param payload - The payload to get the helpful votes.
+ * @returns The helpful votes for the location.
+ */
 export async function getHelpfulVotesForLocation(payload: {
   location_id: string;
 }): Promise<{ review_ids: string[] }> {
